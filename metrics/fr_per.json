@@ -1,0 +1,41 @@
+{
+  "clean": {
+    "utterances": 10,
+    "total_ref_units": 2156,
+    "total_edits": 864,
+    "per": 0.4007421150278293
+  },
+  "by_snr": {
+    "40": {
+      "utterances": 10,
+      "total_ref_units": 2156,
+      "total_edits": 876,
+      "per": 0.40630797773654914
+    },
+    "30": {
+      "utterances": 10,
+      "total_ref_units": 2156,
+      "total_edits": 915,
+      "per": 0.42439703153988867
+    },
+    "20": {
+      "utterances": 10,
+      "total_ref_units": 2156,
+      "total_edits": 1071,
+      "per": 0.4967532467532468
+    },
+    "10": {
+      "utterances": 10,
+      "total_ref_units": 2156,
+      "total_edits": 1691,
+      "per": 0.7843228200371057
+    },
+    "0": {
+      "utterances": 10,
+      "total_ref_units": 2156,
+      "total_edits": 1918,
+      "per": 0.8896103896103896
+    }
+  },
+  "mean_noisy_per": 0.600278293135436
+}
