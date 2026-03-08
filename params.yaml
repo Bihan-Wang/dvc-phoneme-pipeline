@@ -8,4 +8,36 @@ snr_levels:
   - 10
   - 0
 
+snr_levels_csv: "40,30,20,10,0"
+
 seed: 42
+
+dataset:
+  en:
+    root_dir: LibriSpeech/dev-clean
+    transcript_glob: "*.trans.txt"
+    audio_ext: ".wav"
+
+phoneme_voices:
+  en: en-us
+
+noise:
+  en:
+    audio_root: data/interim/noisy/en
+
+manifests:
+  en_clean: manifests/en/clean.jsonl
+  en_noisy_dir: manifests/en/noisy
+
+
+inference:
+  model_id: facebook/wav2vec2-lv-60-espeak-cv-ft
+  batch_size: 4
+  device: cpu
+  max_utts_per_manifest: 100
+  en_output_dir: manifests/en/predictions
+  en_clean_output: manifests/en/predictions_clean.jsonl
+
+evaluation:
+  en_per_metrics: metrics/en_per.json
+  en_per_plot: figures/en_per_curve.png

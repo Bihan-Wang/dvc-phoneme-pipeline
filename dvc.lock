@@ -1,0 +1,168 @@
+schema: '2.0'
+stages:
+  make_clean_manifest_en:
+    cmd: python3 src/build_clean_manifest.py --lang en --dataset-root 
+      LibriSpeech/dev-clean --transcript-glob '*.trans.txt' --audio-ext '.wav' 
+      --espeak-voice en-us --output manifests/en/clean.jsonl
+    deps:
+    - path: LibriSpeech/dev-clean
+      hash: md5
+      md5: d05a304b8e29a83544f209a63e6cea86.dir
+      size: 980279045
+      nfiles: 5506
+    - path: src/build_clean_manifest.py
+      hash: md5
+      md5: ff64eed2157a31770985df091696c065
+      size: 5062
+    params:
+      params.yaml:
+        dataset.en:
+          root_dir: LibriSpeech/dev-clean
+          transcript_glob: '*.trans.txt'
+          audio_ext: .wav
+        manifests.en_clean: manifests/en/clean.jsonl
+        phoneme_voices.en: en-us
+    outs:
+    - path: manifests/en/clean.jsonl
+      hash: md5
+      md5: b2b21b0062c3af5e9a7b96cd2ded9bb0
+      size: 1461514
+  make_noisy_manifests_en:
+    cmd: python3 src/build_noisy_manifests.py --clean-manifest 
+      manifests/en/clean.jsonl --snr-levels '40,30,20,10,0' --seed 42 
+      --audio-root data/interim/noisy/en --manifest-dir manifests/en/noisy
+    deps:
+    - path: manifests/en/clean.jsonl
+      hash: md5
+      md5: b2b21b0062c3af5e9a7b96cd2ded9bb0
+      size: 1461514
+    - path: src/build_noisy_manifests.py
+      hash: md5
+      md5: a1a402e19dcdaba20b5521895db8f0e8
+      size: 7581
+    params:
+      params.yaml:
+        manifests.en_clean: manifests/en/clean.jsonl
+        manifests.en_noisy_dir: manifests/en/noisy
+        noise.en.audio_root: data/interim/noisy/en
+        seed: 42
+        snr_levels_csv: 40,30,20,10,0
+    outs:
+    - path: data/interim/noisy/en
+      hash: md5
+      md5: 29e7871d9811313cb4b9b8d6cd0e291c.dir
+      size: 3103973980
+      nfiles: 13515
+    - path: manifests/en/noisy
+      hash: md5
+      md5: afcf30942b5cfe90c9ddea646ef6979e.dir
+      size: 7299412
+      nfiles: 5
+  run_inference_en:
+    cmd: .venv/bin/python src/run_phoneme_inference.py --input-manifest-dir 
+      manifests/en/noisy --output-manifest-dir manifests/en/predictions 
+      --model-id facebook/wav2vec2-lv-60-espeak-cv-ft --batch-size 4 --device 
+      cpu --max-utts-per-manifest 100
+    deps:
+    - path: manifests/en/noisy
+      hash: md5
+      md5: afcf30942b5cfe90c9ddea646ef6979e.dir
+      size: 7299412
+      nfiles: 5
+    - path: src/run_phoneme_inference.py
+      hash: md5
+      md5: a7048880378239507dd4c0e50e58a1ac
+      size: 6341
+    params:
+      params.yaml:
+        inference.batch_size: 4
+        inference.device: cpu
+        inference.en_output_dir: manifests/en/predictions
+        inference.max_utts_per_manifest: 100
+        inference.model_id: facebook/wav2vec2-lv-60-espeak-cv-ft
+        manifests.en_noisy_dir: manifests/en/noisy
+    outs:
+    - path: manifests/en/predictions
+      hash: md5
+      md5: 8186674614ee293a36d3d9872218b78f.dir
+      size: 2066801
+      nfiles: 5
+  run_inference_en_clean:
+    cmd: .venv/bin/python src/run_phoneme_inference.py --input-manifest 
+      manifests/en/clean.jsonl --output-manifest 
+      manifests/en/predictions_clean.jsonl --model-id 
+      facebook/wav2vec2-lv-60-espeak-cv-ft --batch-size 4 --device cpu 
+      --max-utts-per-manifest 100
+    deps:
+    - path: manifests/en/clean.jsonl
+      hash: md5
+      md5: b2b21b0062c3af5e9a7b96cd2ded9bb0
+      size: 1461514
+    - path: src/run_phoneme_inference.py
+      hash: md5
+      md5: a7048880378239507dd4c0e50e58a1ac
+      size: 6341
+    params:
+      params.yaml:
+        inference.batch_size: 4
+        inference.device: cpu
+        inference.en_clean_output: manifests/en/predictions_clean.jsonl
+        inference.max_utts_per_manifest: 100
+        inference.model_id: facebook/wav2vec2-lv-60-espeak-cv-ft
+        manifests.en_clean: manifests/en/clean.jsonl
+    outs:
+    - path: manifests/en/predictions_clean.jsonl
+      hash: md5
+      md5: 9168cde2f3bc7790ce62f2c22edb8fd1
+      size: 66482
+  evaluate_per_en:
+    cmd: .venv/bin/python src/compute_per.py --clean-pred-manifest 
+      manifests/en/predictions_clean.jsonl --noisy-pred-dir 
+      manifests/en/predictions --snr-levels '40,30,20,10,0' --output 
+      metrics/en_per.json
+    deps:
+    - path: manifests/en/predictions
+      hash: md5
+      md5: 8186674614ee293a36d3d9872218b78f.dir
+      size: 2066801
+      nfiles: 5
+    - path: manifests/en/predictions_clean.jsonl
+      hash: md5
+      md5: 9168cde2f3bc7790ce62f2c22edb8fd1
+      size: 66482
+    - path: src/compute_per.py
+      hash: md5
+      md5: 807323884a271470ddfa16217bca7881
+      size: 4024
+    params:
+      params.yaml:
+        evaluation.en_per_metrics: metrics/en_per.json
+        inference.en_clean_output: manifests/en/predictions_clean.jsonl
+        inference.en_output_dir: manifests/en/predictions
+        snr_levels_csv: 40,30,20,10,0
+    outs:
+    - path: metrics/en_per.json
+      hash: md5
+      md5: 6e3129119886ac967a74a9564909f1b7
+      size: 859
+  plot_per_en:
+    cmd: .venv/bin/python src/plot_per.py --metrics metrics/en_per.json --output
+      figures/en_per_curve.png --title "English PER vs Noise"
+    deps:
+    - path: metrics/en_per.json
+      hash: md5
+      md5: 6e3129119886ac967a74a9564909f1b7
+      size: 859
+    - path: src/plot_per.py
+      hash: md5
+      md5: 4af22c7ba5d8070ceda1ccd2e220fc2a
+      size: 1600
+    params:
+      params.yaml:
+        evaluation.en_per_metrics: metrics/en_per.json
+        evaluation.en_per_plot: figures/en_per_curve.png
+    outs:
+    - path: figures/en_per_curve.png
+      hash: md5
+      md5: ff9f1287e671616ea7a8369f300af5e6
+      size: 53210

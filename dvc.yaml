@@ -1,0 +1,120 @@
+stages:
+  make_clean_manifest_en:
+    cmd: >-
+      python3 src/build_clean_manifest.py
+      --lang en
+      --dataset-root ${dataset.en.root_dir}
+      --transcript-glob '${dataset.en.transcript_glob}'
+      --audio-ext '${dataset.en.audio_ext}'
+      --espeak-voice ${phoneme_voices.en}
+      --output ${manifests.en_clean}
+    deps:
+      - src/build_clean_manifest.py
+      - ${dataset.en.root_dir}
+    params:
+      - dataset.en
+      - phoneme_voices.en
+      - manifests.en_clean
+    outs:
+      - ${manifests.en_clean}
+
+  make_noisy_manifests_en:
+    cmd: >-
+      python3 src/build_noisy_manifests.py
+      --clean-manifest ${manifests.en_clean}
+      --snr-levels '${snr_levels_csv}'
+      --seed ${seed}
+      --audio-root ${noise.en.audio_root}
+      --manifest-dir ${manifests.en_noisy_dir}
+    deps:
+      - src/build_noisy_manifests.py
+      - ${manifests.en_clean}
+    params:
+      - snr_levels_csv
+      - seed
+      - noise.en.audio_root
+      - manifests.en_clean
+      - manifests.en_noisy_dir
+    outs:
+      - ${noise.en.audio_root}
+      - ${manifests.en_noisy_dir}
+
+
+  run_inference_en:
+    cmd: >-
+      .venv/bin/python src/run_phoneme_inference.py
+      --input-manifest-dir ${manifests.en_noisy_dir}
+      --output-manifest-dir ${inference.en_output_dir}
+      --model-id ${inference.model_id}
+      --batch-size ${inference.batch_size}
+      --device ${inference.device}
+      --max-utts-per-manifest ${inference.max_utts_per_manifest}
+    deps:
+      - src/run_phoneme_inference.py
+      - ${manifests.en_noisy_dir}
+    params:
+      - manifests.en_noisy_dir
+      - inference.model_id
+      - inference.batch_size
+      - inference.device
+      - inference.max_utts_per_manifest
+      - inference.en_output_dir
+    outs:
+      - ${inference.en_output_dir}
+
+  run_inference_en_clean:
+    cmd: >-
+      .venv/bin/python src/run_phoneme_inference.py
+      --input-manifest ${manifests.en_clean}
+      --output-manifest ${inference.en_clean_output}
+      --model-id ${inference.model_id}
+      --batch-size ${inference.batch_size}
+      --device ${inference.device}
+      --max-utts-per-manifest ${inference.max_utts_per_manifest}
+    deps:
+      - src/run_phoneme_inference.py
+      - ${manifests.en_clean}
+    params:
+      - manifests.en_clean
+      - inference.model_id
+      - inference.batch_size
+      - inference.device
+      - inference.max_utts_per_manifest
+      - inference.en_clean_output
+    outs:
+      - ${inference.en_clean_output}
+
+  evaluate_per_en:
+    cmd: >-
+      .venv/bin/python src/compute_per.py
+      --clean-pred-manifest ${inference.en_clean_output}
+      --noisy-pred-dir ${inference.en_output_dir}
+      --snr-levels '${snr_levels_csv}'
+      --output ${evaluation.en_per_metrics}
+    deps:
+      - src/compute_per.py
+      - ${inference.en_clean_output}
+      - ${inference.en_output_dir}
+    params:
+      - snr_levels_csv
+      - inference.en_clean_output
+      - inference.en_output_dir
+      - evaluation.en_per_metrics
+    metrics:
+      - ${evaluation.en_per_metrics}
+
+
+  plot_per_en:
+    cmd: >-
+      .venv/bin/python src/plot_per.py
+      --metrics ${evaluation.en_per_metrics}
+      --output ${evaluation.en_per_plot}
+      --title "English PER vs Noise"
+    deps:
+      - src/plot_per.py
+      - ${evaluation.en_per_metrics}
+    params:
+      - evaluation.en_per_metrics
+      - evaluation.en_per_plot
+    outs:
+      - ${evaluation.en_per_plot}
