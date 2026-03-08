@@ -1,6 +1,6 @@
 # DVC pipeline for phoneme ASR robustness to noise
 
-This project follows the lab specification with manifests as the core contract.
+This project uses manifests as the core contract.
 
 ## Progress (first 4 parts)
 
